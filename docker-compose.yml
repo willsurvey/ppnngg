@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8
+    container_name: ponorogocafe_db
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: ponorogocafe_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: ponorogocafe_backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+
+  web:
+    build: ./web
+    container_name: ponorogocafe_web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    env_file: ./web/.env.local
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  mysql_data:
