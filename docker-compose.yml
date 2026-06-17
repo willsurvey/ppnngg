@@ -33,7 +33,7 @@ services:
     build: ./web
     container_name: ponorogocafe_web
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - backend
     env_file: ./web/.env.local

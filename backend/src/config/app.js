@@ -10,7 +10,7 @@ const app = express();
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://ponorogocafe.id']
-    : ['http://localhost:3000'],
+    : ['http://localhost:3000', 'http://localhost:3002'],
   credentials: true
 }));
 app.use(express.json());
