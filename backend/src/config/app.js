@@ -69,8 +69,10 @@ app.use(express.urlencoded({ extended: true }));
 // Static file serving for uploaded photos
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
-// Swagger UI - use CDN to avoid HTTPS upgrade issues on HTTP servers
-const swaggerHtml = `<!DOCTYPE html>
+// Swagger UI - use CDN + inline spec to avoid HTTPS upgrade issues
+app.get('/api-docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -84,18 +86,14 @@ const swaggerHtml = `<!DOCTYPE html>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
     SwaggerUIBundle({
-      url: window.location.origin + '/v1/swagger.json',
+      spec: ${JSON.stringify(swaggerSpec)},
       dom_id: '#swagger-ui',
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
       layout: 'StandaloneLayout'
     });
   </script>
 </body>
-</html>`;
-
-app.get('/api-docs', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send(swaggerHtml);
+</html>`);
 });
 
 // Serve swagger spec as JSON
