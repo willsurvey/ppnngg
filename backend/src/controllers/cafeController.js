@@ -1,4 +1,5 @@
 const cafeService = require('../services/cafeService');
+const cafeRepository = require('../repositories/cafeRepository');
 
 class CafeController {
   // ===== PUBLIC ENDPOINTS =====
@@ -109,6 +110,19 @@ class CafeController {
     }
   }
 
+  // GET /v1/admin/cafes/:id
+  async getCafeById(req, res, next) {
+    try {
+      const cafe = await cafeRepository.findById(req.params.id);
+      if (!cafe) {
+        return res.status(404).json({ message: 'Cafe tidak ditemukan' });
+      }
+      res.json(cafe);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // PUT /v1/admin/cafes/:id
   async updateCafe(req, res, next) {
     try {
@@ -191,25 +205,6 @@ class CafeController {
     try {
       const stats = await cafeService.getDashboardStats();
       res.json(stats);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // GET /v1/admin/cafes/:id
-  async getCafeById(req, res, next) {
-    try {
-      const cafe = await cafeService.getCafeBySlug(req.params.slug);
-      // Try by slug first, then by id
-      let result = cafe;
-      if (!result) {
-        const cafeRepo = require('../repositories/cafeRepository');
-        result = await cafeRepo.findById(req.params.id || req.params.slug);
-      }
-      if (!result) {
-        return res.status(404).json({ message: 'Cafe tidak ditemukan' });
-      }
-      res.json(result);
     } catch (error) {
       next(error);
     }

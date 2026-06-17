@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN mkdir -p logs uploads
+
 EXPOSE 3001
 
 CMD ["node", "server.js"]

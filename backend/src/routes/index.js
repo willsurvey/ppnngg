@@ -11,9 +11,40 @@ router.use('/auth', authRoutes);
 router.use('/cafes', cafeRoutes);
 router.use('/admin', adminRoutes);
 
-// Master data (public)
+/**
+ * @swagger
+ * /lokasi:
+ *   get:
+ *     tags: [Master Data]
+ *     summary: Daftar semua lokasi (kecamatan)
+ *     responses:
+ *       200:
+ *         description: Daftar lokasi kecamatan
+ */
 router.get('/lokasi', cafeController.getAllLokasi);
+
+/**
+ * @swagger
+ * /kategori:
+ *   get:
+ *     tags: [Master Data]
+ *     summary: Daftar semua kategori (suasana)
+ *     responses:
+ *       200:
+ *         description: Daftar kategori/suasana
+ */
 router.get('/kategori', cafeController.getAllKategori);
+
+/**
+ * @swagger
+ * /fasilitas:
+ *   get:
+ *     tags: [Master Data]
+ *     summary: Daftar semua fasilitas
+ *     responses:
+ *       200:
+ *         description: Daftar fasilitas
+ */
 router.get('/fasilitas', cafeController.getAllFasilitas);
 
 module.exports = router;
