@@ -7,6 +7,9 @@ import type {
   NearbyCafe,
   SearchResult,
   CafeFilters,
+  Lokasi,
+  Kategori,
+  Fasilitas,
 } from '@/types';
 
 export const cafeApi = {
@@ -39,5 +42,20 @@ export const cafeApi = {
   async getFilterOptions(): Promise<FilterOptions> {
     const { data } = await publicApi.get('/cafes/filters/options');
     return data;
+  },
+
+  async getLokasi(): Promise<Lokasi[]> {
+    const { data } = await publicApi.get('/lokasi');
+    return data.data;
+  },
+
+  async getKategori(): Promise<Kategori[]> {
+    const { data } = await publicApi.get('/kategori');
+    return data.data;
+  },
+
+  async getFasilitas(): Promise<Fasilitas[]> {
+    const { data } = await publicApi.get('/fasilitas');
+    return data.data;
   },
 };

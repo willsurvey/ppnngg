@@ -10,9 +10,24 @@ interface CafeFilterProps {
 }
 
 export default function CafeFilter({ filters, filterOptions, onFilterChange, onReset }: CafeFilterProps) {
-  const hasActiveFilters = filters.kecamatan || filters.harga_max || filters.sesi_buka ||
-    filters.suasana || filters.ac || filters.wifi || filters.mushola ||
-    filters.toilet || filters.parkir || filters.ruang_rapat || filters.colokan;
+  const hasActiveFilters = filters.lokasi_id || filters.harga_max || filters.sesi_buka ||
+    filters.kategori_id || filters.fasilitas_ids;
+
+  // Parse fasilitas_ids from comma-separated string
+  const selectedFasilitasIds = filters.fasilitas_ids
+    ? filters.fasilitas_ids.split(',').map(Number)
+    : [];
+
+  const handleFasilitasToggle = (id: number) => {
+    const current = [...selectedFasilitasIds];
+    const idx = current.indexOf(id);
+    if (idx >= 0) {
+      current.splice(idx, 1);
+    } else {
+      current.push(id);
+    }
+    onFilterChange('fasilitas_ids', current.length > 0 ? current.join(',') : undefined);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -27,17 +42,17 @@ export default function CafeFilter({ filters, filterOptions, onFilterChange, onR
       </div>
 
       <div className="space-y-4">
-        {/* Kecamatan */}
+        {/* Lokasi */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
           <select
-            value={filters.kecamatan || ''}
-            onChange={(e) => onFilterChange('kecamatan', e.target.value || undefined)}
+            value={filters.lokasi_id || ''}
+            onChange={(e) => onFilterChange('lokasi_id', e.target.value ? Number(e.target.value) : undefined)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">Semua Kecamatan</option>
-            {filterOptions?.kecamatan.map((k) => (
-              <option key={k} value={k}>{k}</option>
+            {filterOptions?.lokasi.map((l) => (
+              <option key={l.id} value={l.id}>{l.nama_kecamatan}</option>
             ))}
           </select>
         </div>
@@ -73,17 +88,17 @@ export default function CafeFilter({ filters, filterOptions, onFilterChange, onR
           </select>
         </div>
 
-        {/* Suasana */}
+        {/* Kategori */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Suasana</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Kategori / Suasana</label>
           <select
-            value={filters.suasana || ''}
-            onChange={(e) => onFilterChange('suasana', e.target.value || undefined)}
+            value={filters.kategori_id || ''}
+            onChange={(e) => onFilterChange('kategori_id', e.target.value ? Number(e.target.value) : undefined)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="">Semua Suasana</option>
-            {filterOptions?.suasana.map((s) => (
-              <option key={s} value={s} className="capitalize">{s}</option>
+            <option value="">Semua Kategori</option>
+            {filterOptions?.kategori.map((k) => (
+              <option key={k.id} value={k.id}>{k.nama_kategori}</option>
             ))}
           </select>
         </div>
@@ -92,23 +107,15 @@ export default function CafeFilter({ filters, filterOptions, onFilterChange, onR
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Fasilitas</label>
           <div className="grid grid-cols-2 gap-2">
-            {([
-              ['wifi', 'WiFi'],
-              ['ac', 'AC'],
-              ['mushola', 'Mushola'],
-              ['toilet', 'Toilet'],
-              ['parkir', 'Parkir'],
-              ['ruang_rapat', 'R. Rapat'],
-              ['colokan', 'Colokan'],
-            ] as const).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 cursor-pointer">
+            {filterOptions?.fasilitas.map((f) => (
+              <label key={f.id} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={!!filters[key]}
-                  onChange={(e) => onFilterChange(key, e.target.checked || undefined)}
+                  checked={selectedFasilitasIds.includes(f.id)}
+                  onChange={() => handleFasilitasToggle(f.id)}
                   className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="text-sm text-gray-700">{label}</span>
+                <span className="text-sm text-gray-700">{f.nama_fasilitas}</span>
               </label>
             ))}
           </div>

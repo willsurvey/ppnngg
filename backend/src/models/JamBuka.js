@@ -2,13 +2,13 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class FotoCafe extends Model {
+  class JamBuka extends Model {
     static associate(models) {
-      FotoCafe.belongsTo(models.Cafe, { foreignKey: 'cafe_id' });
+      JamBuka.belongsTo(models.Cafe, { foreignKey: 'cafe_id' });
     }
   }
 
-  FotoCafe.init({
+  JamBuka.init({
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -20,30 +20,35 @@ module.exports = (sequelize, DataTypes) => {
       references: { model: 'cafe', key: 'id' },
       onDelete: 'CASCADE'
     },
-    url_foto: {
-      type: DataTypes.STRING(500),
+    hari: {
+      type: DataTypes.ENUM('senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'),
       allowNull: false
     },
-    urutan: {
-      type: DataTypes.TINYINT,
-      allowNull: false,
-      defaultValue: 1
-    },
-    caption: {
-      type: DataTypes.STRING(200),
+    jam_buka: {
+      type: DataTypes.TIME,
       allowNull: true
+    },
+    jam_tutup: {
+      type: DataTypes.TIME,
+      allowNull: true
+    },
+    is_tutup: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     sequelize,
-    modelName: 'FotoCafe',
-    tableName: 'foto_cafe',
+    modelName: 'JamBuka',
+    tableName: 'jam_buka',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     indexes: [
-      { fields: ['cafe_id'] }
+      { fields: ['cafe_id'] },
+      { fields: ['cafe_id', 'hari'], unique: true }
     ]
   });
 
-  return FotoCafe;
+  return JamBuka;
 };

@@ -1,58 +1,59 @@
 'use client';
-import { useState } from 'react';
-import { Wifi, Car, Zap, Building, Thermometer, Bath, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { adminCafeApi } from '@/lib/api/adminApi';
+import { cafeApi } from '@/lib/api/cafeApi';
 import type { Fasilitas } from '@/types';
 
 interface FasilitasToggleProps {
   cafeId: number;
-  fasilitas: Fasilitas | null;
-  onFasilitasChange: (fasilitas: Fasilitas) => void;
+  selectedFasilitasIds: number[];
+  onFasilitasChange: (ids: number[]) => void;
 }
 
-const FASILITAS_ITEMS: { key: keyof Fasilitas; label: string; icon: React.ElementType }[] = [
-  { key: 'ac', label: 'AC', icon: Thermometer },
-  { key: 'wifi', label: 'Wi-Fi', icon: Wifi },
-  { key: 'toilet', label: 'Toilet', icon: Bath },
-  { key: 'mushola', label: 'Mushola', icon: BookOpen },
-  { key: 'ruang_rapat', label: 'Ruang Rapat', icon: Building },
-  { key: 'parkir', label: 'Parkir', icon: Car },
-  { key: 'colokan', label: 'Colokan', icon: Zap },
-];
+export default function FasilitasToggle({ cafeId, selectedFasilitasIds, onFasilitasChange }: FasilitasToggleProps) {
+  const [allFasilitas, setAllFasilitas] = useState<Fasilitas[]>([]);
+  const [saving, setSaving] = useState<number | null>(null);
 
-export default function FasilitasToggle({ cafeId, fasilitas, onFasilitasChange }: FasilitasToggleProps) {
-  const [saving, setSaving] = useState<string | null>(null);
+  useEffect(() => {
+    cafeApi.getFasilitas().then(setAllFasilitas).catch(() => {});
+  }, []);
 
-  const current: Fasilitas = fasilitas || {
-    ac: false, wifi: false, toilet: false, mushola: false,
-    ruang_rapat: false, parkir: false, colokan: false,
-  };
-
-  const handleToggle = async (key: keyof Fasilitas) => {
-    const updated = { ...current, [key]: !current[key] };
-    onFasilitasChange(updated);
-    setSaving(key);
+  const handleToggle = async (fasilitasId: number) => {
+    const current = [...selectedFasilitasIds];
+    const idx = current.indexOf(fasilitasId);
+    if (idx >= 0) {
+      current.splice(idx, 1);
+    } else {
+      current.push(fasilitasId);
+    }
+    onFasilitasChange(current);
+    setSaving(fasilitasId);
     try {
-      await adminCafeApi.updateFasilitas(cafeId, updated);
-    } catch (error) {
-      onFasilitasChange(current);
+      await adminCafeApi.setFasilitas(cafeId, current);
+    } catch {
+      // revert on error
+      onFasilitasChange(selectedFasilitasIds);
       alert('Gagal mengubah fasilitas');
     } finally {
       setSaving(null);
     }
   };
 
+  if (allFasilitas.length === 0) {
+    return <p className="text-sm text-gray-500">Memuat fasilitas...</p>;
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="font-semibold text-lg text-gray-900">Fasilitas</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {FASILITAS_ITEMS.map(({ key, label, icon: Icon }) => {
-          const isActive = current[key];
-          const isLoading = saving === key;
+        {allFasilitas.map((f) => {
+          const isActive = selectedFasilitasIds.includes(f.id);
+          const isLoading = saving === f.id;
           return (
             <button
-              key={key}
-              onClick={() => handleToggle(key)}
+              key={f.id}
+              onClick={() => handleToggle(f.id)}
               disabled={isLoading}
               className={`
                 flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left
@@ -63,8 +64,7 @@ export default function FasilitasToggle({ cafeId, fasilitas, onFasilitasChange }
                 ${isLoading ? 'opacity-50' : ''}
               `}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : 'text-gray-400'}`} />
-              <span className="text-sm font-medium">{label}</span>
+              <span className="text-sm font-medium">{f.nama_fasilitas}</span>
               <span className={`ml-auto w-5 h-5 rounded-full flex items-center justify-center text-xs
                 ${isActive ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-400'}
               `}>

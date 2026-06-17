@@ -13,11 +13,18 @@ router.get('/dashboard/stats', cafeController.getDashboardStats);
 
 // Cafe CRUD
 router.post('/cafes', cafeController.createCafe);
+router.get('/cafes/:id', cafeController.getCafeById);
 router.put('/cafes/:id', cafeController.updateCafe);
 router.delete('/cafes/:id', cafeController.deleteCafe);
 
-// Fasilitas
-router.put('/cafes/:id/fasilitas', cafeController.updateFasilitas);
+// Kategori (M:N)
+router.put('/cafes/:id/kategori', cafeController.setKategori);
+
+// Fasilitas (M:N)
+router.put('/cafes/:id/fasilitas', cafeController.setFasilitas);
+
+// Jam Buka
+router.put('/cafes/:id/jam-buka', cafeController.setJamBuka);
 
 // Foto
 router.post('/cafes/:id/fotos', uploadMiddleware.single('foto'), fotoController.uploadFoto);

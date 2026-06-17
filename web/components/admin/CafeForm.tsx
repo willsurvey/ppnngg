@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
-import type { CreateCafeRequest } from '@/types';
+import { useState, useEffect } from 'react';
+import type { CreateCafeRequest, Lokasi } from '@/types';
+import { cafeApi } from '@/lib/api/cafeApi';
 
 interface CafeFormProps {
   initialData?: Partial<CreateCafeRequest>;
@@ -8,35 +9,29 @@ interface CafeFormProps {
   submitLabel: string;
 }
 
-const KECAMATAN_OPTIONS = [
-  'Ponorogo', 'Babadan', 'Jenangan', 'Mlarak', 'Siman',
-  'Balong', 'Kauman', 'Ngebel', 'Sooko', 'Pulung',
-  'Mungkal', 'Slahung', 'Ngrayun', 'Bungkal', 'Sawoo',
-  'Sampung', 'Sukorejo', 'Badegan', 'Jambon', 'Pudak'
-];
-
-const SESI_OPTIONS = ['pagi', 'siang', 'sore', 'malam', '24jam'];
+const SESI_OPTIONS = ['pagi', 'siang', 'malam'];
 
 export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFormProps) {
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
   const [formData, setFormData] = useState<CreateCafeRequest>({
-    nama: initialData?.nama || '',
+    nama_cafe: initialData?.nama_cafe || '',
+    lokasi_id: initialData?.lokasi_id || 0,
     alamat: initialData?.alamat || '',
-    kecamatan: initialData?.kecamatan || '',
     latitude: initialData?.latitude,
     longitude: initialData?.longitude,
+    no_telepon: initialData?.no_telepon || '',
     harga_min: initialData?.harga_min,
     harga_max: initialData?.harga_max,
-    jam_buka: initialData?.jam_buka || '',
-    jam_tutup: initialData?.jam_tutup || '',
-    buka_24jam: initialData?.buka_24jam || false,
+    deskripsi: initialData?.deskripsi || '',
     sesi_buka: initialData?.sesi_buka || '',
-    suasana: initialData?.suasana || '',
-    instagram: initialData?.instagram || '',
-    google_maps_url: initialData?.google_maps_url || '',
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (field: keyof CreateCafeRequest, value: string | number | boolean | undefined) => {
+  useEffect(() => {
+    cafeApi.getLokasi().then(setLokasiList).catch(() => {});
+  }, []);
+
+  const handleChange = (field: keyof CreateCafeRequest, value: string | number | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -53,13 +48,13 @@ export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFor
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Nama */}
+        {/* Nama Cafe */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">Nama Cafe *</label>
           <input
             type="text"
-            value={formData.nama}
-            onChange={(e) => handleChange('nama', e.target.value)}
+            value={formData.nama_cafe}
+            onChange={(e) => handleChange('nama_cafe', e.target.value)}
             required
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
@@ -76,29 +71,18 @@ export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFor
           />
         </div>
 
-        {/* Kecamatan */}
+        {/* Lokasi / Kecamatan */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan *</label>
           <select
-            value={formData.kecamatan}
-            onChange={(e) => handleChange('kecamatan', e.target.value)}
+            value={formData.lokasi_id || ''}
+            onChange={(e) => handleChange('lokasi_id', e.target.value ? Number(e.target.value) : undefined)}
+            required
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">Pilih Kecamatan</option>
-            {KECAMATAN_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
+            {lokasiList.map((l) => <option key={l.id} value={l.id}>{l.nama_kecamatan}</option>)}
           </select>
-        </div>
-
-        {/* Suasana */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Suasana</label>
-          <input
-            type="text"
-            value={formData.suasana}
-            onChange={(e) => handleChange('suasana', e.target.value)}
-            placeholder="aesthetic, study, outdoor, cozy, industrial"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
         </div>
 
         {/* Sesi Buka */}
@@ -106,7 +90,7 @@ export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFor
           <label className="block text-sm font-medium text-gray-700 mb-1">Sesi Buka</label>
           <select
             value={formData.sesi_buka}
-            onChange={(e) => handleChange('sesi_buka', e.target.value)}
+            onChange={(e) => handleChange('sesi_buka', e.target.value || undefined)}
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">Pilih Sesi</option>
@@ -114,35 +98,14 @@ export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFor
           </select>
         </div>
 
-        {/* Buka 24 Jam */}
-        <div className="flex items-center gap-2 pt-6">
-          <input
-            type="checkbox"
-            checked={formData.buka_24jam}
-            onChange={(e) => handleChange('buka_24jam', e.target.checked)}
-            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <label className="text-sm text-gray-700">Buka 24 Jam</label>
-        </div>
-
-        {/* Jam Buka */}
+        {/* No Telepon */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Jam Buka</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
           <input
-            type="time"
-            value={formData.jam_buka}
-            onChange={(e) => handleChange('jam_buka', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-
-        {/* Jam Tutup */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Jam Tutup</label>
-          <input
-            type="time"
-            value={formData.jam_tutup}
-            onChange={(e) => handleChange('jam_tutup', e.target.value)}
+            type="text"
+            value={formData.no_telepon}
+            onChange={(e) => handleChange('no_telepon', e.target.value)}
+            placeholder="08xxxxxxxxxx"
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
@@ -197,26 +160,14 @@ export default function CafeForm({ initialData, onSubmit, submitLabel }: CafeFor
           />
         </div>
 
-        {/* Instagram */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
-          <input
-            type="text"
-            value={formData.instagram}
-            onChange={(e) => handleChange('instagram', e.target.value)}
-            placeholder="username tanpa @"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-
-        {/* Google Maps URL */}
+        {/* Deskripsi */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Google Maps URL</label>
-          <input
-            type="url"
-            value={formData.google_maps_url}
-            onChange={(e) => handleChange('google_maps_url', e.target.value)}
-            placeholder="https://maps.google.com/?q=..."
+          <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+          <textarea
+            value={formData.deskripsi}
+            onChange={(e) => handleChange('deskripsi', e.target.value)}
+            rows={3}
+            placeholder="Deskripsi singkat tentang cafe..."
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>

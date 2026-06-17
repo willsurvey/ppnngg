@@ -2,15 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Settings, ImageIcon, FileText } from 'lucide-react';
+import { ArrowLeft, Settings, ImageIcon, FileText, Clock } from 'lucide-react';
 import CafeForm from '@/components/admin/CafeForm';
 import FotoManager from '@/components/admin/FotoManager';
 import FasilitasToggle from '@/components/admin/FasilitasToggle';
 import { adminCafeApi } from '@/lib/api/adminApi';
-import { cafeApi } from '@/lib/api/cafeApi';
-import type { CafeDetail, CreateCafeRequest, Fasilitas, FotoCafe } from '@/types';
+import type { CafeDetail, CreateCafeRequest, FotoCafe, JamBuka, JamBukaInput } from '@/types';
 
-type Tab = 'detail' | 'fasilitas' | 'foto';
+type Tab = 'detail' | 'fasilitas' | 'foto' | 'jam';
 
 export default function AdminEditCafePage() {
   const router = useRouter();
@@ -19,20 +18,16 @@ export default function AdminEditCafePage() {
   const [cafe, setCafe] = useState<CafeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('detail');
-  const [fasilitas, setFasilitas] = useState<Fasilitas | null>(null);
+  const [fasilitasIds, setFasilitasIds] = useState<number[]>([]);
   const [fotos, setFotos] = useState<FotoCafe[]>([]);
 
   useEffect(() => {
     const fetchCafe = async () => {
       try {
-        const result = await cafeApi.getAllCafes({ limit: 100 });
-        const found = result.data.find((c) => c.id === id);
-        if (found) {
-          const detail = await cafeApi.getCafeBySlug(found.slug);
-          setCafe(detail);
-          setFasilitas(detail.fasilitas || null);
-          setFotos(detail.fotos || []);
-        }
+        const detail = await adminCafeApi.getCafeById(id);
+        setCafe(detail);
+        setFasilitasIds((detail.fasilitas || []).map(f => f.id));
+        setFotos(detail.fotos || []);
       } catch (error) {
         console.error('Failed to load cafe:', error);
       } finally {
@@ -50,6 +45,7 @@ export default function AdminEditCafePage() {
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'detail', label: 'Detail Cafe', icon: FileText },
     { key: 'fasilitas', label: 'Fasilitas', icon: Settings },
+    { key: 'jam', label: 'Jam Buka', icon: Clock },
     { key: 'foto', label: `Foto (${fotos.length})`, icon: ImageIcon },
   ];
 
@@ -82,7 +78,7 @@ export default function AdminEditCafePage() {
           <ArrowLeft className="w-4 h-4" />
           Kembali
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">Edit Cafe: {cafe.nama}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">Edit Cafe: {cafe.nama_cafe}</h1>
       </div>
 
       {/* Tabs */}
@@ -110,20 +106,16 @@ export default function AdminEditCafePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <CafeForm
             initialData={{
-              nama: cafe.nama,
+              nama_cafe: cafe.nama_cafe,
+              lokasi_id: cafe.lokasi?.id,
               alamat: cafe.alamat,
-              kecamatan: cafe.kecamatan,
               latitude: cafe.latitude,
               longitude: cafe.longitude,
+              no_telepon: cafe.no_telepon,
               harga_min: cafe.harga_min,
               harga_max: cafe.harga_max,
-              jam_buka: cafe.jam_buka,
-              jam_tutup: cafe.jam_tutup,
-              buka_24jam: cafe.buka_24jam,
+              deskripsi: cafe.deskripsi,
               sesi_buka: cafe.sesi_buka,
-              suasana: cafe.suasana,
-              instagram: cafe.instagram,
-              google_maps_url: cafe.google_maps_url,
             }}
             onSubmit={handleSubmit}
             submitLabel="Update Cafe"
@@ -135,9 +127,15 @@ export default function AdminEditCafePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <FasilitasToggle
             cafeId={id}
-            fasilitas={fasilitas}
-            onFasilitasChange={setFasilitas}
+            selectedFasilitasIds={fasilitasIds}
+            onFasilitasChange={setFasilitasIds}
           />
+        </div>
+      )}
+
+      {activeTab === 'jam' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <JamBukaEditor cafeId={id} initialJamBuka={cafe.jam_buka || []} />
         </div>
       )}
 
@@ -150,6 +148,88 @@ export default function AdminEditCafePage() {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// Inline JamBuka editor component
+const HARI_LIST = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+
+function JamBukaEditor({ cafeId, initialJamBuka }: { cafeId: number; initialJamBuka: JamBuka[] }) {
+  const [jamData, setJamData] = useState<JamBukaInput[]>(() => {
+    if (initialJamBuka.length > 0) {
+      return initialJamBuka.map(j => ({
+        hari: j.hari,
+        jam_buka: j.jam_buka?.slice(0, 5) || '',
+        jam_tutup: j.jam_tutup?.slice(0, 5) || '',
+        is_tutup: j.is_tutup,
+      }));
+    }
+    return HARI_LIST.map(h => ({ hari: h, jam_buka: '', jam_tutup: '', is_tutup: false }));
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = (index: number, field: string, value: string | boolean) => {
+    setJamData(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminCafeApi.setJamBuka(cafeId, jamData);
+      alert('Jam buka berhasil disimpan');
+    } catch {
+      alert('Gagal menyimpan jam buka');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-lg text-gray-900">Jam Buka</h3>
+      <div className="space-y-3">
+        {jamData.map((item, index) => (
+          <div key={item.hari} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+            <span className="w-20 text-sm font-medium capitalize text-gray-700">{item.hari}</span>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={item.is_tutup || false}
+                onChange={(e) => handleChange(index, 'is_tutup', e.target.checked)}
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-600">Tutup</span>
+            </label>
+            <input
+              type="time"
+              value={item.jam_buka || ''}
+              onChange={(e) => handleChange(index, 'jam_buka', e.target.value)}
+              disabled={item.is_tutup}
+              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
+            />
+            <span className="text-gray-400">-</span>
+            <input
+              type="time"
+              value={item.jam_tutup || ''}
+              onChange={(e) => handleChange(index, 'jam_tutup', e.target.value)}
+              disabled={item.is_tutup}
+              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
+      >
+        {saving ? 'Menyimpan...' : 'Simpan Jam Buka'}
+      </button>
     </div>
   );
 }

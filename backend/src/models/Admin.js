@@ -1,31 +1,44 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+'use strict';
+const { Model } = require('sequelize');
 
-const Admin = sequelize.define('tbl_admin', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  username: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true,
-    validate: {
-      notEmpty: { msg: 'Username wajib diisi' }
-    }
-  },
-  password: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-    validate: {
-      notEmpty: { msg: 'Password wajib diisi' }
+module.exports = (sequelize, DataTypes) => {
+  class Admin extends Model {
+    static associate(models) {
+      // Admin has no FK relationships to other models
     }
   }
-}, {
-  tableName: 'tbl_admin',
-  timestamps: true,
-  updatedAt: false
-});
 
-module.exports = Admin;
+  Admin.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    username: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false
+    },
+    role: {
+      type: DataTypes.ENUM('admin', 'superadmin'),
+      allowNull: false,
+      defaultValue: 'admin'
+    }
+  }, {
+    sequelize,
+    modelName: 'Admin',
+    tableName: 'admin',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    indexes: [
+      { fields: ['username'], unique: true }
+    ]
+  });
+
+  return Admin;
+};

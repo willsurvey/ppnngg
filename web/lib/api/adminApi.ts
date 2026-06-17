@@ -4,10 +4,10 @@ import type {
   CafeDetail,
   CreateCafeRequest,
   UpdateCafeRequest,
-  Fasilitas,
   FotoCafe,
   PaginatedResponse,
   CafeListItem,
+  JamBukaInput,
 } from '@/types';
 
 export const adminCafeApi = {
@@ -18,6 +18,11 @@ export const adminCafeApi = {
 
   async getAllCafes(page: number = 1, limit: number = 10): Promise<PaginatedResponse<CafeListItem>> {
     const { data } = await adminApi.get(`/cafes?page=${page}&limit=${limit}`);
+    return data;
+  },
+
+  async getCafeById(id: number): Promise<CafeDetail> {
+    const { data } = await adminApi.get(`/admin/cafes/${id}`);
     return data;
   },
 
@@ -35,8 +40,18 @@ export const adminCafeApi = {
     await adminApi.delete(`/admin/cafes/${id}`);
   },
 
-  async updateFasilitas(cafeId: number, fasilitas: Partial<Fasilitas>): Promise<Fasilitas> {
-    const { data } = await adminApi.put(`/admin/cafes/${cafeId}/fasilitas`, fasilitas);
+  async setKategori(cafeId: number, kategoriIds: number[]): Promise<CafeDetail> {
+    const { data } = await adminApi.put(`/admin/cafes/${cafeId}/kategori`, { kategori_ids: kategoriIds });
+    return data;
+  },
+
+  async setFasilitas(cafeId: number, fasilitasIds: number[]): Promise<CafeDetail> {
+    const { data } = await adminApi.put(`/admin/cafes/${cafeId}/fasilitas`, { fasilitas_ids: fasilitasIds });
+    return data;
+  },
+
+  async setJamBuka(cafeId: number, jamBuka: JamBukaInput[]): Promise<CafeDetail> {
+    const { data } = await adminApi.put(`/admin/cafes/${cafeId}/jam-buka`, { jam_buka: jamBuka });
     return data;
   },
 

@@ -5,18 +5,15 @@ const path = require('path');
 
 class FotoService {
   async uploadFoto(cafeId, file, caption, urutan) {
-    const cafe = await cafeRepository.findById(cafeId);
+    const cafe = await cafeRepository.findByIdSimple(cafeId);
     if (!cafe) {
-      // Clean up uploaded file if cafe not found
       if (file && file.path) fs.unlinkSync(file.path);
       return null;
     }
 
-    // Build URL based on server config
     const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
     const urlFoto = `${baseUrl}/uploads/${file.filename}`;
 
-    // Auto-determine urutan if not provided
     let fotoUrutan = parseInt(urutan, 10);
     if (!fotoUrutan || isNaN(fotoUrutan)) {
       const existingFotos = await cafeRepository.getFotoByCafeId(cafeId);
@@ -30,7 +27,6 @@ class FotoService {
       caption: caption || null
     });
 
-    // Recalculate completeness
     await cafeService.recalculateCompleteness(cafeId);
 
     return foto;
@@ -51,14 +47,13 @@ class FotoService {
       }
     }
 
-    // Recalculate completeness
     await cafeService.recalculateCompleteness(foto.cafe_id);
 
     return foto;
   }
 
   async reorderFotos(cafeId, urutan) {
-    const cafe = await cafeRepository.findById(cafeId);
+    const cafe = await cafeRepository.findByIdSimple(cafeId);
     if (!cafe) return null;
 
     await cafeRepository.reorderFotos(cafeId, urutan);

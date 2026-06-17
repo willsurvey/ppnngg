@@ -14,8 +14,8 @@ export default function AdminCafesPage() {
   }, []);
 
   const filteredCafes = cafes.filter(
-    (c) => c.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.kecamatan?.toLowerCase().includes(searchTerm.toLowerCase())
+    (c) => c.nama_cafe.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.lokasi?.nama_kecamatan?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = async (id: number, nama: string) => {
@@ -77,10 +77,10 @@ export default function AdminCafesPage() {
               {filteredCafes.map((cafe) => (
                 <tr key={cafe.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900">{cafe.nama}</p>
+                    <p className="font-medium text-gray-900">{cafe.nama_cafe}</p>
                     <p className="text-xs text-gray-500">{cafe.slug}</p>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{cafe.kecamatan || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{cafe.lokasi?.nama_kecamatan || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {formatRupiahShort(cafe.harga_min || 0)} - {formatRupiahShort(cafe.harga_max || 0)}
                   </td>
@@ -89,13 +89,13 @@ export default function AdminCafesPage() {
                       <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            cafe.completeness_pct >= 80 ? 'bg-green-500' :
-                            cafe.completeness_pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                            cafe.completeness_score >= 80 ? 'bg-green-500' :
+                            cafe.completeness_score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                           }`}
-                          style={{ width: `${cafe.completeness_pct}%` }}
+                          style={{ width: `${cafe.completeness_score}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-500">{cafe.completeness_pct}%</span>
+                      <span className="text-xs text-gray-500">{cafe.completeness_score}%</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -107,7 +107,7 @@ export default function AdminCafesPage() {
                         <Edit className="w-4 h-4" />
                       </Link>
                       <button
-                        onClick={() => handleDelete(cafe.id, cafe.nama)}
+                        onClick={() => handleDelete(cafe.id, cafe.nama_cafe)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />

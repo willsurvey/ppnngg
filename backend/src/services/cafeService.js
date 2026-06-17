@@ -1,79 +1,29 @@
-const { Op } = require('sequelize');
 const slugify = require('slugify');
 const cafeRepository = require('../repositories/cafeRepository');
 const { calculateCompleteness } = require('../utils/completeness');
 const { haversineDistance } = require('../utils/haversine');
-const { Fasilitas, FotoCafe } = require('../models');
 
 class CafeService {
+  // ===== LIST CAFES WITH FILTERS =====
+
   async getAllCafes(query) {
-    const {
-      kecamatan, harga_max, sesi_buka, suasana,
-      ac, wifi, mushola, toilet, parkir, ruang_rapat, colokan,
-      page = 1, limit = 10
-    } = query;
+    const result = await cafeRepository.findWithFilters(query);
 
-    const where = { is_active: true };
-    if (kecamatan) where.kecamatan = kecamatan;
-    if (harga_max) where.harga_min = { [Op.lte]: parseInt(harga_max, 10) };
-    if (sesi_buka) where.sesi_buka = sesi_buka;
-    if (suasana) where.suasana = { [Op.like]: `%${suasana}%` };
-
-    // Build fasilitas filter
-    const fasilitasFilter = {};
-    let needsFasilitasJoin = false;
-    const fasilitasFields = { ac, wifi, mushola, toilet, parkir, ruang_rapat, colokan };
-    for (const [key, value] of Object.entries(fasilitasFields)) {
-      if (value === 'true') {
-        fasilitasFilter[key] = true;
-        needsFasilitasJoin = true;
-      }
-    }
-
-    const include = [];
-    if (needsFasilitasJoin) {
-      include.push({
-        model: Fasilitas,
-        as: 'fasilitas',
-        where: Object.keys(fasilitasFilter).length > 0 ? fasilitasFilter : undefined,
-        required: true
-      });
-    } else {
-      include.push({ model: Fasilitas, as: 'fasilitas' });
-    }
-
-    const result = await cafeRepository.findAll({
-      where,
-      include,
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10)
-    });
-
-    // Format response: add thumbnail from first foto
     const formattedData = result.data.map(cafe => {
-      const cafeJson = cafe.toJSON();
+      const c = cafe.toJSON();
       return {
-        id: cafeJson.id,
-        nama: cafeJson.nama,
-        slug: cafeJson.slug,
-        alamat: cafeJson.alamat,
-        kecamatan: cafeJson.kecamatan,
-        harga_min: cafeJson.harga_min,
-        harga_max: cafeJson.harga_max,
-        sesi_buka: cafeJson.sesi_buka,
-        suasana: cafeJson.suasana,
-        thumbnail: cafeJson.fotos && cafeJson.fotos.length > 0
-          ? cafeJson.fotos[0].url_foto : null,
-        fasilitas: cafeJson.fasilitas ? {
-          ac: cafeJson.fasilitas.ac,
-          wifi: cafeJson.fasilitas.wifi,
-          toilet: cafeJson.fasilitas.toilet,
-          mushola: cafeJson.fasilitas.mushola,
-          ruang_rapat: cafeJson.fasilitas.ruang_rapat,
-          parkir: cafeJson.fasilitas.parkir,
-          colokan: cafeJson.fasilitas.colokan
-        } : null,
-        completeness_pct: cafeJson.completeness_pct
+        id: c.id,
+        nama_cafe: c.nama_cafe,
+        slug: c.slug,
+        alamat: c.alamat,
+        lokasi: c.lokasi ? { id: c.lokasi.id, nama_kecamatan: c.lokasi.nama_kecamatan } : null,
+        harga_min: c.harga_min,
+        harga_max: c.harga_max,
+        sesi_buka: c.sesi_buka,
+        thumbnail: c.fotos && c.fotos.length > 0 ? c.fotos[0].url_foto : null,
+        kategori: (c.kategori || []).map(k => ({ id: k.id, nama_kategori: k.nama_kategori })),
+        fasilitas: (c.fasilitas || []).map(f => ({ id: f.id, nama_fasilitas: f.nama_fasilitas, icon: f.icon })),
+        completeness_score: c.completeness_score
       };
     });
 
@@ -88,36 +38,47 @@ class CafeService {
     };
   }
 
+  // ===== DETAIL BY SLUG =====
+
   async getCafeBySlug(slug) {
     const cafe = await cafeRepository.findBySlug(slug);
     if (!cafe) return null;
 
-    const cafeJson = cafe.toJSON();
+    const c = cafe.toJSON();
     return {
-      ...cafeJson,
-      fasilitas: cafeJson.fasilitas ? {
-        ac: cafeJson.fasilitas.ac,
-        wifi: cafeJson.fasilitas.wifi,
-        toilet: cafeJson.fasilitas.toilet,
-        mushola: cafeJson.fasilitas.mushola,
-        ruang_rapat: cafeJson.fasilitas.ruang_rapat,
-        parkir: cafeJson.fasilitas.parkir,
-        colokan: cafeJson.fasilitas.colokan
-      } : null,
-      fotos: cafeJson.fotos || []
+      ...c,
+      lokasi: c.lokasi || null,
+      kategori: (c.kategori || []).map(k => ({ id: k.id, nama_kategori: k.nama_kategori })),
+      fasilitas: (c.fasilitas || []).map(f => ({ id: f.id, nama_fasilitas: f.nama_fasilitas, icon: f.icon })),
+      jam_buka: c.jam_buka || [],
+      fotos: c.fotos || []
     };
   }
 
+  // ===== SEARCH =====
+
   async searchCafes(query, limit) {
-    return cafeRepository.search(query, parseInt(limit, 10) || 5);
+    const results = await cafeRepository.search(query, parseInt(limit, 10) || 5);
+    return results.map(c => {
+      const cj = c.toJSON();
+      return {
+        id: cj.id,
+        nama_cafe: cj.nama_cafe,
+        slug: cj.slug,
+        alamat: cj.alamat,
+        kecamatan: cj.lokasi ? cj.lokasi.nama_kecamatan : null
+      };
+    });
   }
+
+  // ===== NEARBY =====
 
   async getNearbyCafes(lat, lng, radius = 3) {
     const cafes = await cafeRepository.findActiveCafes();
     const userLat = parseFloat(lat);
     const userLng = parseFloat(lng);
 
-    const results = cafes
+    return cafes
       .filter(cafe => cafe.latitude != null && cafe.longitude != null)
       .map(cafe => {
         const cafeLat = parseFloat(cafe.latitude);
@@ -125,32 +86,47 @@ class CafeService {
         const jarak = haversineDistance(userLat, userLng, cafeLat, cafeLng);
         return {
           id: cafe.id,
-          nama: cafe.nama,
+          nama_cafe: cafe.nama_cafe,
           jarak_km: Math.round(jarak * 100) / 100,
           latitude: cafeLat,
-          longitude: cafeLng
+          longitude: cafeLng,
+          kecamatan: cafe.lokasi ? cafe.lokasi.nama_kecamatan : null
         };
       })
       .filter(cafe => cafe.jarak_km <= parseFloat(radius))
       .sort((a, b) => a.jarak_km - b.jarak_km);
-
-    return results;
   }
+
+  // ===== FILTER OPTIONS =====
 
   async getFilterOptions() {
     return cafeRepository.getFilterOptions();
   }
 
+  // ===== CREATE CAFE =====
+
   async createCafe(data) {
-    // Auto-generate slug from nama
+    // Auto-generate slug
     if (!data.slug) {
-      data.slug = slugify(data.nama, { lower: true, strict: true });
+      data.slug = this._generateSlug(data.nama_cafe);
     }
 
     const cafe = await cafeRepository.create(data);
 
-    // Create empty fasilitas record
-    await cafeRepository.upsertFasilitas(cafe.id, {});
+    // Set kategori if provided
+    if (data.kategori_ids && data.kategori_ids.length > 0) {
+      await cafeRepository.setCafeKategori(cafe.id, data.kategori_ids);
+    }
+
+    // Set fasilitas if provided
+    if (data.fasilitas_ids && data.fasilitas_ids.length > 0) {
+      await cafeRepository.setCafeFasilitas(cafe.id, data.fasilitas_ids);
+    }
+
+    // Set jam buka if provided
+    if (data.jam_buka && data.jam_buka.length > 0) {
+      await cafeRepository.setJamBuka(cafe.id, data.jam_buka);
+    }
 
     // Calculate completeness
     await this.recalculateCompleteness(cafe.id);
@@ -158,14 +134,33 @@ class CafeService {
     return cafeRepository.findById(cafe.id);
   }
 
+  // ===== UPDATE CAFE =====
+
   async updateCafe(id, data) {
+    const cafe = await cafeRepository.findByIdSimple(id);
+    if (!cafe) return null;
+
     // Regenerate slug if nama changes
-    if (data.nama && !data.slug) {
-      data.slug = slugify(data.nama, { lower: true, strict: true });
+    if (data.nama_cafe && data.nama_cafe !== cafe.nama_cafe) {
+      data.slug = this._generateSlug(data.nama_cafe);
     }
 
-    const cafe = await cafeRepository.update(id, data);
-    if (!cafe) return null;
+    await cafeRepository.update(id, data);
+
+    // Update kategori if provided
+    if (data.kategori_ids) {
+      await cafeRepository.setCafeKategori(id, data.kategori_ids);
+    }
+
+    // Update fasilitas if provided
+    if (data.fasilitas_ids) {
+      await cafeRepository.setCafeFasilitas(id, data.fasilitas_ids);
+    }
+
+    // Update jam buka if provided
+    if (data.jam_buka) {
+      await cafeRepository.setJamBuka(id, data.jam_buka);
+    }
 
     // Recalculate completeness
     await this.recalculateCompleteness(id);
@@ -173,36 +168,84 @@ class CafeService {
     return cafeRepository.findById(id);
   }
 
+  // ===== DELETE CAFE =====
+
   async deleteCafe(id) {
     return cafeRepository.softDelete(id);
   }
 
-  async updateFasilitas(cafeId, data) {
-    const cafe = await cafeRepository.findById(cafeId);
+  // ===== SET KATEGORI =====
+
+  async setKategori(cafeId, kategoriIds) {
+    const cafe = await cafeRepository.findByIdSimple(cafeId);
     if (!cafe) return null;
-
-    const fasilitas = await cafeRepository.upsertFasilitas(cafeId, data);
-
-    // Recalculate completeness
+    await cafeRepository.setCafeKategori(cafeId, kategoriIds);
     await this.recalculateCompleteness(cafeId);
-
-    return fasilitas;
+    return cafeRepository.findById(cafeId);
   }
+
+  // ===== SET FASILITAS =====
+
+  async setFasilitas(cafeId, fasilitasIds) {
+    const cafe = await cafeRepository.findByIdSimple(cafeId);
+    if (!cafe) return null;
+    await cafeRepository.setCafeFasilitas(cafeId, fasilitasIds);
+    await this.recalculateCompleteness(cafeId);
+    return cafeRepository.findById(cafeId);
+  }
+
+  // ===== SET JAM BUKA =====
+
+  async setJamBuka(cafeId, jamBukaList) {
+    const cafe = await cafeRepository.findByIdSimple(cafeId);
+    if (!cafe) return null;
+    await cafeRepository.setJamBuka(cafeId, jamBukaList);
+    await this.recalculateCompleteness(cafeId);
+    return cafeRepository.findById(cafeId);
+  }
+
+  // ===== DASHBOARD =====
 
   async getDashboardStats() {
     return cafeRepository.getDashboardStats();
   }
+
+  // ===== RECALCULATE COMPLETENESS =====
 
   async recalculateCompleteness(cafeId) {
     const cafe = await cafeRepository.findById(cafeId);
     if (!cafe) return;
 
     const cafeData = cafe.toJSON();
-    const fasilitas = cafeData.fasilitas || null;
+    const kategori = cafeData.kategori || [];
+    const fasilitas = cafeData.fasilitas || [];
+    const jamBuka = cafeData.jam_buka || [];
     const fotoCount = cafeData.fotos ? cafeData.fotos.length : 0;
 
-    const score = calculateCompleteness(cafeData, fasilitas, fotoCount);
-    await cafeRepository.update(cafeId, { completeness_pct: score });
+    const score = calculateCompleteness(cafeData, kategori, fasilitas, jamBuka, fotoCount);
+    await cafeRepository.update(cafeId, { completeness_score: score });
+  }
+
+  // ===== MASTER DATA =====
+
+  async getAllLokasi() {
+    return cafeRepository.getAllLokasi();
+  }
+
+  async getAllKategori() {
+    return cafeRepository.getAllKategori();
+  }
+
+  async getAllFasilitas() {
+    return cafeRepository.getAllFasilitas();
+  }
+
+  // ===== HELPERS =====
+
+  _generateSlug(nama) {
+    const base = slugify(nama, { lower: true, strict: true });
+    const suffix = Date.now().toString(36).slice(-4);
+    return `${base}-${suffix}`;
   }
 }
 

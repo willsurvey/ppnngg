@@ -63,8 +63,8 @@ export default function AdminDashboardPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Cafe per Kecamatan</h2>
         <div className="space-y-3">
           {stats.cafe_per_kecamatan.map((item) => (
-            <div key={item.kecamatan} className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{item.kecamatan}</span>
+            <div key={item.nama_kecamatan} className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">{item.nama_kecamatan}</span>
               <div className="flex items-center gap-3">
                 <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div

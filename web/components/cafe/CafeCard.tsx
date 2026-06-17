@@ -17,7 +17,7 @@ export default function CafeCard({ cafe }: CafeCardProps) {
           {cafe.thumbnail ? (
             <img
               src={cafe.thumbnail}
-              alt={cafe.nama}
+              alt={cafe.nama_cafe}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -28,11 +28,11 @@ export default function CafeCard({ cafe }: CafeCardProps) {
           {/* Completeness badge */}
           <div className="absolute top-3 right-3">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              cafe.completeness_pct >= 80 ? 'bg-green-100 text-green-800' :
-              cafe.completeness_pct >= 50 ? 'bg-yellow-100 text-yellow-800' :
+              cafe.completeness_score >= 80 ? 'bg-green-100 text-green-800' :
+              cafe.completeness_score >= 50 ? 'bg-yellow-100 text-yellow-800' :
               'bg-red-100 text-red-800'
             }`}>
-              {cafe.completeness_pct}% lengkap
+              {cafe.completeness_score}% lengkap
             </span>
           </div>
         </div>
@@ -40,12 +40,12 @@ export default function CafeCard({ cafe }: CafeCardProps) {
         {/* Content */}
         <div className="p-4">
           <h3 className="font-semibold text-lg text-gray-900 group-hover:text-primary-700 transition-colors">
-            {cafe.nama}
+            {cafe.nama_cafe}
           </h3>
 
           <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
             <MapPin className="w-4 h-4" />
-            <span>{cafe.kecamatan}</span>
+            <span>{cafe.lokasi?.nama_kecamatan || '-'}</span>
           </div>
 
           <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
@@ -58,31 +58,31 @@ export default function CafeCard({ cafe }: CafeCardProps) {
             <span className="text-sm font-medium text-primary-700">
               {formatRupiahShort(cafe.harga_min || 0)} - {formatRupiahShort(cafe.harga_max || 0)}
             </span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded capitalize">
-              {cafe.suasana}
-            </span>
           </div>
 
-          {/* Fasilitas icons */}
-          {cafe.fasilitas && (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {cafe.fasilitas.wifi && <FasilitasBadge label="WiFi" />}
-              {cafe.fasilitas.ac && <FasilitasBadge label="AC" />}
-              {cafe.fasilitas.parkir && <FasilitasBadge label="Parkir" />}
-              {cafe.fasilitas.mushola && <FasilitasBadge label="Mushola" />}
-              {cafe.fasilitas.colokan && <FasilitasBadge label="Colokan" />}
+          {/* Kategori badges */}
+          {cafe.kategori && cafe.kategori.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {cafe.kategori.slice(0, 3).map(k => (
+                <span key={k.id} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  {k.nama_kategori}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Fasilitas badges */}
+          {cafe.fasilitas && cafe.fasilitas.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {cafe.fasilitas.slice(0, 5).map(f => (
+                <span key={f.id} className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded">
+                  {f.nama_fasilitas}
+                </span>
+              ))}
             </div>
           )}
         </div>
       </div>
     </Link>
-  );
-}
-
-function FasilitasBadge({ label }: { label: string }) {
-  return (
-    <span className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded">
-      {label}
-    </span>
   );
 }
