@@ -14,7 +14,16 @@ const app = express();
 
 // Security middleware
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+    }
+  }
 }));
 
 // CORS
@@ -64,8 +73,17 @@ app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Ponorogo Cafe API Docs'
+  customSiteTitle: 'Ponorogo Cafe API Docs',
+  swaggerOptions: {
+    url: '/v1/swagger.json'
+  }
 }));
+
+// Serve swagger spec as JSON
+app.get('/v1/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // API Routes
 app.use('/v1', routes);
