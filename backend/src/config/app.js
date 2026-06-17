@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const path = require('path');
-const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const logger = require('./logger');
 const routes = require('../routes');
@@ -70,14 +69,34 @@ app.use(express.urlencoded({ extended: true }));
 // Static file serving for uploaded photos
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Ponorogo Cafe API Docs',
-  swaggerOptions: {
-    url: '/v1/swagger.json'
-  }
-}));
+// Swagger UI - use CDN to avoid HTTPS upgrade issues on HTTP servers
+const swaggerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ponorogo Cafe API Docs</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>body { margin: 0; padding: 0; } .swagger-ui .topbar { display: none }</style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: window.location.origin + '/v1/swagger.json',
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+      layout: 'StandaloneLayout'
+    });
+  </script>
+</body>
+</html>`;
+
+app.get('/api-docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(swaggerHtml);
+});
 
 // Serve swagger spec as JSON
 app.get('/v1/swagger.json', (req, res) => {
