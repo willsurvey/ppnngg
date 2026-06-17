@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { DashboardStats, CafeListItem, CafeDetail } from '@/types';
 import { adminCafeApi } from '@/lib/api/adminApi';
+import { cafeApi } from '@/lib/api/cafeApi';
 
 interface AdminState {
   stats: DashboardStats | null;
@@ -36,7 +37,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   fetchCafes: async (page = 1) => {
     set({ loading: true, error: null });
     try {
-      const result = await adminCafeApi.getAllCafes(page);
+      const result = await adminCafeApi.getAllCafes(page, 100);
       set({ cafes: result.data, loading: false });
     } catch (error) {
       set({ error: 'Gagal memuat data cafe', loading: false });
@@ -46,7 +47,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   fetchCafeDetail: async (slug: string) => {
     set({ loading: true, error: null });
     try {
-      const cafe = await adminCafeApi.getAllCafes().then(() => null);
+      const cafe = await cafeApi.getCafeBySlug(slug);
       set({ selectedCafe: cafe, loading: false });
     } catch (error) {
       set({ error: 'Gagal memuat detail cafe', loading: false });

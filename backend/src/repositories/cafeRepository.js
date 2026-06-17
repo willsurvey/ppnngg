@@ -105,7 +105,7 @@ class CafeRepository {
     });
 
     // Cafe per kecamatan
-    const { sequelize } = require('../config/database');
+    const sequelize = require('../config/database');
     const [cafePerKecamatan] = await sequelize.query(`
       SELECT kecamatan, COUNT(*) as total 
       FROM tbl_cafe 

@@ -28,7 +28,7 @@ const Cafe = sequelize.define('tbl_cafe', {
       'Ponorogo', 'Babadan', 'Jenangan', 'Mlarak', 'Siman',
       'Balong', 'Kauman', 'Ngebel', 'Sooko', 'Pulung',
       'Mungkal', 'Slahung', 'Ngrayun', 'Bungkal', 'Sawoo',
-      'Sampung', 'Sukorejo', 'Badegan', 'Jambon', 'Badegan', 'Pudak'
+      'Sampung', 'Sukorejo', 'Badegan', 'Jambon', 'Pudak'
     ),
     allowNull: true
   },

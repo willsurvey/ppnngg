@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useAdminStore } from '@/store/useAdminStore';
@@ -8,6 +8,10 @@ import { formatRupiahShort } from '@/lib/utils/formatRupiah';
 export default function AdminCafesPage() {
   const { cafes, loading, deleteCafe, fetchCafes } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchCafes();
+  }, []);
 
   const filteredCafes = cafes.filter(
     (c) => c.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
