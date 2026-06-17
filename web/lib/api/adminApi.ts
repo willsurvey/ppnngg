@@ -17,7 +17,7 @@ export const adminCafeApi = {
   },
 
   async getAllCafes(page: number = 1, limit: number = 10): Promise<PaginatedResponse<CafeListItem>> {
-    const { data } = await adminApi.get(`/cafes?page=${page}&limit=${limit}`);
+    const { data } = await adminApi.get(`/admin/cafes?page=${page}&limit=${limit}`);
     return data;
   },
 

@@ -59,7 +59,7 @@ export default function CafesPage() {
                     className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
                     onClick={() => setShowSearch(false)}
                   >
-                    <p className="font-medium text-sm text-gray-900">{result.nama}</p>
+                    <p className="font-medium text-sm text-gray-900">{result.nama_cafe}</p>
                     <p className="text-xs text-gray-500">{result.kecamatan} &bull; {result.alamat}</p>
                   </Link>
                 ))}

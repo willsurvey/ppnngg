@@ -37,6 +37,29 @@ router.get('/dashboard/stats', cafeController.getDashboardStats);
 /**
  * @swagger
  * /admin/cafes:
+ *   get:
+ *     tags: [Admin Cafe]
+ *     summary: List semua cafe (admin, protected)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Daftar cafe dengan pagination
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/cafes', cafeController.getAllCafes);
+
+/**
+ * @swagger
+ * /admin/cafes:
  *   post:
  *     tags: [Admin Cafe]
  *     summary: Tambah cafe baru
