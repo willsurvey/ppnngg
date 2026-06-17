@@ -1,34 +1,31 @@
 const sequelize = require('../config/database');
-const Admin = require('./Admin');
-const Lokasi = require('./Lokasi');
-const Kategori = require('./Kategori');
-const Cafe = require('./Cafe');
-const JamBuka = require('./JamBuka');
-const Fasilitas = require('./Fasilitas');
-const CafeKategori = require('./CafeKategori');
-const CafeFasilitas = require('./CafeFasilitas');
-const FotoCafe = require('./FotoCafe');
+const { DataTypes } = require('sequelize');
+
+// Initialize all models with sequelize instance
+const Admin = require('./Admin')(sequelize, DataTypes);
+const Lokasi = require('./Lokasi')(sequelize, DataTypes);
+const Kategori = require('./Kategori')(sequelize, DataTypes);
+const Cafe = require('./Cafe')(sequelize, DataTypes);
+const JamBuka = require('./JamBuka')(sequelize, DataTypes);
+const Fasilitas = require('./Fasilitas')(sequelize, DataTypes);
+const CafeKategori = require('./CafeKategori')(sequelize, DataTypes);
+const CafeFasilitas = require('./CafeFasilitas')(sequelize, DataTypes);
+const FotoCafe = require('./FotoCafe')(sequelize, DataTypes);
+
+const models = { Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe };
 
 // Initialize all associations
-Admin.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-Lokasi.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-Kategori.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-Cafe.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-JamBuka.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-Fasilitas.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-CafeKategori.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-CafeFasilitas.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
-FotoCafe.associate({ Admin, Lokasi, Kategori, Cafe, JamBuka, Fasilitas, CafeKategori, CafeFasilitas, FotoCafe });
+Admin.associate(models);
+Lokasi.associate(models);
+Kategori.associate(models);
+Cafe.associate(models);
+JamBuka.associate(models);
+Fasilitas.associate(models);
+CafeKategori.associate(models);
+CafeFasilitas.associate(models);
+FotoCafe.associate(models);
 
 module.exports = {
   sequelize,
-  Admin,
-  Lokasi,
-  Kategori,
-  Cafe,
-  JamBuka,
-  Fasilitas,
-  CafeKategori,
-  CafeFasilitas,
-  FotoCafe
+  ...models
 };
